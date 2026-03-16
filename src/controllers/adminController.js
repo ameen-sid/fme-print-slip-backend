@@ -439,13 +439,22 @@ export const uploadPredefinedExcel = async (req, res) => {
 
         for (const row of data) {
             const reqRow = pool.request();
-            reqRow.input('material_group', sql.VarChar, row['Material Group'] || row['material_group'] || null);
-            reqRow.input('part_code', sql.VarChar, row['Part Code'] || row['part_code'] || null);
-            reqRow.input('wire_type_name', sql.VarChar, row['Wire Type'] || row['wire_type_name'] || null);
-            reqRow.input('wire_size', sql.VarChar, row['Wire Size'] || row['wire_size'] || null);
-            reqRow.input('wire_colour', sql.VarChar, row['Wire Colour'] || row['wire_colour'] || null);
-            reqRow.input('wire_stripe', sql.VarChar, row['Wire Stripe'] || row['wire_stripe'] || null);
-            reqRow.input('special_character', sql.VarChar, row['Special Character'] || row['special_character'] || null);
+            // Robust column mapping
+            const material_group = row['Material Group'] || row['Material group'] || row['material_group'] || null;
+            const part_code = row['Part Code'] || row['Part code'] || row['part_code'] || null;
+            const wire_type_name = row['Wire Type Name'] || row['Wire Type'] || row['Wire type'] || row['wire_type_name'] || null;
+            const wire_size = row['Wire Size'] || row['Wire size'] || row['wire_size'] || null;
+            const wire_colour = row['Wire Colour'] || row['Wire colour'] || row['wire_colour'] || null;
+            const wire_stripe = row['Wire Stripe'] || row['Wire stripe'] || row['wire_stripe'] || null;
+            const special_character = row['Special Character'] || row['Special character'] || row['special_character'] || null;
+
+            reqRow.input('material_group', sql.VarChar, material_group);
+            reqRow.input('part_code', sql.VarChar, part_code);
+            reqRow.input('wire_type_name', sql.VarChar, wire_type_name);
+            reqRow.input('wire_size', sql.VarChar, wire_size);
+            reqRow.input('wire_colour', sql.VarChar, wire_colour);
+            reqRow.input('wire_stripe', sql.VarChar, wire_stripe);
+            reqRow.input('special_character', sql.VarChar, special_character);
 
             await reqRow.query(`
                 INSERT INTO predefined_data 
