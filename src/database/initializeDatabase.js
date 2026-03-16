@@ -48,9 +48,31 @@ export async function initializeDatabase() {
         status VARCHAR(255),
         remarks TEXT,
         material_type VARCHAR(255),
-        print_count INT DEFAULT 0
+        supp_part_no VARCHAR(255),
+        print_count INT DEFAULT 0,
+        is_locked BIT DEFAULT 0,
+        last_printed_by VARCHAR(255),
+        last_printed_at DATETIME
       )
     `);
+
+    // Proactively add missing columns if table already exists
+    const alterColumns = [
+      { name: 'supp_part_no', type: 'VARCHAR(255)' },
+      { name: 'is_locked', type: 'BIT DEFAULT 0' },
+      { name: 'last_printed_by', type: 'VARCHAR(255)' },
+      { name: 'last_printed_at', type: 'DATETIME' }
+    ];
+
+    for (const col of alterColumns) {
+      await pool.request().query(`
+        IF NOT EXISTS (
+          SELECT * FROM sys.columns 
+          WHERE object_id = OBJECT_ID('slip_data') AND name = '${col.name}'
+        )
+        ALTER TABLE slip_data ADD ${col.name} ${col.type};
+      `);
+    }
 
     await pool.request().query(`
       IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='print_requests' and xtype='U')
