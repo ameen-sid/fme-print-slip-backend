@@ -67,7 +67,7 @@ export const getSlip = async (req, res) => {
             issue_qty: slip.issue_qty,
             material_type: slip.material_type,
             rack_no: slip.rack_no,
-            supp_part_no: slip.supp_part_no || predefined?.wire_type_name || slip.item_code,
+            mfr_part_no: slip.mfr_part_no || predefined?.wire_type_name || slip.item_code,
             qr_string,
         });
 

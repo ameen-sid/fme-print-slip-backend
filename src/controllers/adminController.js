@@ -263,7 +263,7 @@ export const getSlipDataView = async (req, res) => {
         const rowsResult = await request.query(`
             SELECT slip_no, lot_no, slip_date, slip_time, item_code, item_name,
                    kanban_no, rack_no, issue_qty, to_location,
-                   status, material_type, supp_part_no, print_count,
+                   status, material_type, mfr_part_no, print_count,
                    is_locked, last_printed_by, last_printed_at
             FROM slip_data${where}
             ORDER BY slip_no DESC
@@ -300,7 +300,7 @@ export const uploadExcelData = async (req, res) => {
 
         let hasSuppPartNo = false;
         try {
-            await pool.request().query('SELECT TOP 1 supp_part_no FROM slip_data');
+            await pool.request().query('SELECT TOP 1 mfr_part_no FROM slip_data');
             hasSuppPartNo = true;
         } catch { /* column not added yet — skip it */ }
 
@@ -328,15 +328,15 @@ export const uploadExcelData = async (req, res) => {
                 
                 let queryStr = '';
                 if (hasSuppPartNo) {
-                    reqRow.input('supp_part_no', sql.VarChar, String(row['Mfr Part No'] || row['Supp. Part No.'] || ''));
+                    reqRow.input('mfr_part_no', sql.VarChar, String(row['Mfr Part No'] || row['Supp. Part No.'] || ''));
                     // MSSQL equivalent of INSERT IGNORE
                     queryStr = `
                         BEGIN TRY
                             INSERT INTO slip_data
                             (slip_no, lot_no, slip_date, slip_time, item_code, item_name, kanban_no, rack_no,
-                             issue_qty, user_id, to_location, status, remarks, material_type, supp_part_no)
+                             issue_qty, user_id, to_location, status, remarks, material_type, mfr_part_no)
                             VALUES (@slip_no, @lot_no, @slip_date, @slip_time, @item_code, @item_name, @kanban_no, @rack_no,
-                             @issue_qty, @user_id, @to_location, @status, @remarks, @material_type, @supp_part_no);
+                             @issue_qty, @user_id, @to_location, @status, @remarks, @material_type, @mfr_part_no);
                             SELECT 1 AS inserted_flag;
                         END TRY
                         BEGIN CATCH
