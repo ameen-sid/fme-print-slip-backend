@@ -211,13 +211,13 @@ export const deleteSlipDataByRange = async (req, res) => {
     }
     try {
         const pool = await poolPromise;
-        // 104 corresponds to German format dd.mm.yyyy which matches JS's "DD.MM.YYYY"
+        // Use TRY_CONVERT and normalize dots to hyphens (format 105 = dd-mm-yyyy) to prevent crashing on invalid dates
         const result = await pool.request()
             .input('from_date', sql.VarChar, from_date)
             .input('to_date', sql.VarChar, to_date)
             .query(`
                 DELETE FROM slip_data
-                WHERE CONVERT(DATE, slip_date, 104) BETWEEN CONVERT(DATE, @from_date) AND CONVERT(DATE, @to_date)
+                WHERE TRY_CONVERT(DATE, REPLACE(slip_date, '.', '-'), 105) BETWEEN TRY_CONVERT(DATE, @from_date) AND TRY_CONVERT(DATE, @to_date)
             `);
             
         res.json({
