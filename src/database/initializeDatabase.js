@@ -50,6 +50,7 @@ export async function initializeDatabase() {
         material_type VARCHAR(255),
         mfr_part_no VARCHAR(255),
         print_count INT DEFAULT 0,
+        target_print_count INT DEFAULT 1,
         is_locked BIT DEFAULT 0,
         last_printed_by VARCHAR(255),
         last_printed_at DATETIME
@@ -59,6 +60,7 @@ export async function initializeDatabase() {
     // Proactively add missing columns if table already exists
     const alterColumns = [
       { name: 'mfr_part_no', type: 'VARCHAR(255)' },
+      { name: 'target_print_count', type: 'INT DEFAULT 1' },
       { name: 'is_locked', type: 'BIT DEFAULT 0' },
       { name: 'last_printed_by', type: 'VARCHAR(255)' },
       { name: 'last_printed_at', type: 'DATETIME' }

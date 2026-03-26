@@ -296,6 +296,21 @@ export const uploadExcelData = async (req, res) => {
             return res.status(400).json({ message: 'The Excel file is empty.' });
         }
 
+        // --- Group Duplicate Rows by Slip No + Kanban No ---
+        const groupedDataMap = new Map();
+        for (const row of data) {
+            const sn = String(row['Slip_no'] || row['Slip No'] || '').trim();
+            const kanban = String(row['Kanban Number'] || row['Kanban No'] || '').trim();
+            const key = `${sn}_${kanban}`;
+            
+            if (groupedDataMap.has(key)) {
+                groupedDataMap.get(key).target_print_count += 1;
+            } else {
+                groupedDataMap.set(key, { ...row, target_print_count: 1 });
+            }
+        }
+        const groupedData = Array.from(groupedDataMap.values());
+
         const pool = await poolPromise;
 
         let hasSuppPartNo = false;
@@ -307,8 +322,8 @@ export const uploadExcelData = async (req, res) => {
         let inserted = 0, skipped = 0, failed = 0;
         const rowErrors = [];
 
-        for (let i = 0; i < data.length; i++) {
-            const row = data[i];
+        for (let i = 0; i < groupedData.length; i++) {
+            const row = groupedData[i];
             try {
                 const reqRow = pool.request();
                 reqRow.input('slip_no', sql.VarChar, String(row['Slip_no'] || row['Slip No'] || ''));
@@ -325,6 +340,7 @@ export const uploadExcelData = async (req, res) => {
                 reqRow.input('status', sql.VarChar, String(row['Status'] || ''));
                 reqRow.input('remarks', sql.VarChar, String(row['Remarks'] || ''));
                 reqRow.input('material_type', sql.VarChar, String(row['Material Type'] || row['Mat Type'] || ''));
+                reqRow.input('target_print_count', sql.Int, row.target_print_count);
                 
                 let queryStr = '';
                 if (hasSuppPartNo) {
@@ -334,9 +350,9 @@ export const uploadExcelData = async (req, res) => {
                         BEGIN TRY
                             INSERT INTO slip_data
                             (slip_no, lot_no, slip_date, slip_time, item_code, item_name, kanban_no, rack_no,
-                             issue_qty, user_id, to_location, status, remarks, material_type, mfr_part_no)
+                             issue_qty, user_id, to_location, status, remarks, material_type, mfr_part_no, target_print_count)
                             VALUES (@slip_no, @lot_no, @slip_date, @slip_time, @item_code, @item_name, @kanban_no, @rack_no,
-                             @issue_qty, @user_id, @to_location, @status, @remarks, @material_type, @mfr_part_no);
+                             @issue_qty, @user_id, @to_location, @status, @remarks, @material_type, @mfr_part_no, @target_print_count);
                             SELECT 1 AS inserted_flag;
                         END TRY
                         BEGIN CATCH
@@ -349,9 +365,9 @@ export const uploadExcelData = async (req, res) => {
                         BEGIN TRY
                             INSERT INTO slip_data
                             (slip_no, lot_no, slip_date, slip_time, item_code, item_name, kanban_no, rack_no,
-                             issue_qty, user_id, to_location, status, remarks, material_type)
+                             issue_qty, user_id, to_location, status, remarks, material_type, target_print_count)
                             VALUES (@slip_no, @lot_no, @slip_date, @slip_time, @item_code, @item_name, @kanban_no, @rack_no,
-                             @issue_qty, @user_id, @to_location, @status, @remarks, @material_type);
+                             @issue_qty, @user_id, @to_location, @status, @remarks, @material_type, @target_print_count);
                             SELECT 1 AS inserted_flag;
                         END TRY
                         BEGIN CATCH
@@ -376,7 +392,7 @@ export const uploadExcelData = async (req, res) => {
             }
         }
 
-        const summary = `Uploaded ${inserted} of ${data.length} records.` +
+        const summary = `Uploaded ${inserted} of ${groupedData.length} distinct records (from ${data.length} total Excel rows).` +
             (skipped ? ` ${skipped} duplicates skipped.` : '') +
             (failed ? ` ${failed} rows failed.` : '');
 

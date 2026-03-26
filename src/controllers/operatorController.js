@@ -68,6 +68,8 @@ export const getSlip = async (req, res) => {
             material_type: slip.material_type,
             rack_no: slip.rack_no,
             mfr_part_no: slip.mfr_part_no || predefined?.wire_type_name || slip.item_code,
+            print_count: slip.print_count,
+            target_print_count: slip.target_print_count,
             qr_string,
         });
 
@@ -96,9 +98,9 @@ export const printSlip = async (req, res) => {
 
         const slip = slipResult.recordset[0];
 
-        // is_locked = reprint gate (0/null/false = can print, 1/true = locked)
+        // is_locked = reprint gate. Only lock if the updated print count reaches or exceeds the target.
         if (slip.is_locked) {
-            return res.status(403).json({ message: 'Slip already printed.', requires_approval: true });
+            return res.status(403).json({ message: 'Slip print quota reached.', requires_approval: true });
         }
 
         // Update print count and lock (Using GETDATE() instead of NOW())
@@ -109,7 +111,7 @@ export const printSlip = async (req, res) => {
             .query(`
                 UPDATE slip_data 
                 SET print_count = print_count + 1, 
-                    is_locked = 1, 
+                    is_locked = CASE WHEN (print_count + 1) >= ISNULL(target_print_count, 1) THEN 1 ELSE 0 END, 
                     last_printed_by = @operator_username, 
                     last_printed_at = GETDATE() 
                 WHERE slip_no = @slip_no AND kanban_no = @kanban_no
