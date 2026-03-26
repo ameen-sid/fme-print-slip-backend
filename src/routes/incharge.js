@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { getRequests, approvePrintRequest, rejectPrintRequest } from '../controllers/inchargeController.js';
+import { getPrintReports, exportPrintReports } from '../controllers/adminController.js';
 
 const router = express.Router();
 
@@ -29,5 +30,9 @@ router.post('/requests/:id/approve', authenticateIncharge, approvePrintRequest);
 
 // POST /api/incharge/requests/:id/reject
 router.post('/requests/:id/reject', authenticateIncharge, rejectPrintRequest);
+
+// GET /api/incharge/reports
+router.get('/reports', authenticateIncharge, getPrintReports);
+router.get('/reports/export', authenticateIncharge, exportPrintReports);
 
 export default router;
